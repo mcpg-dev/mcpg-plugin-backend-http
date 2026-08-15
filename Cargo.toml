@@ -1,0 +1,66 @@
+[package]
+name = "mcpg-plugin-backend-http"
+version = "0.1.0-alpha.15"
+license = "Apache-2.0"
+edition = "2024"
+description = """
+HTTP backend binding plugin for mcpg. Dispatches tool calls as
+outbound HTTP/1.1+2 requests via reqwest, with per-binding URL +
+headers, DNS rebinding protection, structured response envelopes,
+and per-caller `cred://` resolution backed by an internal
+ClientRegistry. Mirrors the SQL/NATS/Kafka first-party plugin
+shape; the main mcpg binary depends on this crate at runtime via
+the plugin registry and carries no inline HTTP dispatch code.
+"""
+
+[lib]
+# cdylib: the .so the gateway's native_loader dlopens. rlib: in-tree
+# unit tests + the eager new() constructor (used by tests + the
+# static-firstparty path until the gateway cutover lands).
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Default OFF so the workspace build does not emit `mcpg_plugin_register`
+# from the rlib and collide with the other plugin rlibs. Standalone
+# cdylib builds (nx docker:build / OCI publish) opt in.
+default = []
+cdylib-export = []
+# Declared empty so the SDK macro's `register_static` accessor
+# (`#[cfg(feature = "static-firstparty")]`) does not trip
+# `unexpected_cfgs`. http is consumed as a cdylib.
+static-firstparty = []
+
+[dependencies]
+mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+# Shared HTTP-over-reqwest core (per-cred client cache, DNS-rebinding
+# guard, exec primitives, retry-guidance shaping). grpc/graphql link
+# the same crate so the SSRF guard lives in one place.
+mcpg-plugin-backend-net-core = { git = "https://github.com/mcpg-dev/mcpg-plugin-backend-net-core", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-expr            = { git = "https://github.com/mcpg-dev/mcpg-expr", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+# Unified HostHandle surface (span / metric / audit /
+# resolve_secret / config_snapshot). The plugin stores a
+# `HostHandle` on `Self` and routes per-call observability through
+# it ALONGSIDE the existing internal `tracing::*` / `metrics::*`
+# calls; the coexistence is intentional.
+mcpg-plugin-sdk      = { git = "https://github.com/mcpg-dev/mcpg-plugin-sdk", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13", features = ["static-firstparty"] }
+mcpg-plugin-host     = { git = "https://github.com/mcpg-dev/mcpg-plugin-host", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+anyhow         = "1"
+async-trait    = "0.1"
+blake3         = "1"
+bytes          = "1"
+cel            = "0.13"
+chrono         = { version = "0.4", features = ["clock"] }
+futures        = "0.3"
+metrics        = "0.24"
+reqwest        = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+serde          = { version = "1", features = ["derive"] }
+serde_json     = "1"
+serde_json_path = "0.7"
+tokio          = { version = "1", features = ["sync", "rt", "rt-multi-thread", "macros", "time"] }
+tokio-util     = "0.7"
+tracing        = "0.1"
+url            = "2"
+
+[dev-dependencies]
+tokio    = { version = "1", features = ["macros", "rt", "rt-multi-thread", "net", "io-util", "time"] }
+wiremock = "0.6"

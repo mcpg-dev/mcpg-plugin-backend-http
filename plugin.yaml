@@ -1,0 +1,16 @@
+schema: mcpg.dev/plugin/v1
+id: dev.mcpg.backend.http
+name: HTTP Binding
+license: Apache-2.0
+description: |
+  Dispatches tool calls as outbound HTTP/1.1+2 requests against an
+  operator-configured URL + headers + method. Async via reqwest;
+  DNS rebinding guard rejects private/loopback resolved addresses
+  unless explicitly opted in. Per-caller `cred://` references in
+  url + header values resolve through the gateway's credential
+  cache at dispatch time, with an internal ClientRegistry caching
+  one `reqwest::Client` per resolved-credential digest.
+class: backend
+runtime: native-cdylib-v1
+protocol_version: "1.0"
+required_capabilities: [network_outbound]
