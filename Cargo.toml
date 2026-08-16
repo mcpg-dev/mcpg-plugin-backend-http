@@ -1,6 +1,6 @@
 [package]
 name = "mcpg-plugin-backend-http"
-version = "0.1.0-alpha.15"
+version = "0.1.0-alpha.16"
 license = "Apache-2.0"
 edition = "2024"
 description = """
@@ -31,19 +31,19 @@ cdylib-export = []
 static-firstparty = []
 
 [dependencies]
-mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14" }
 # Shared HTTP-over-reqwest core (per-cred client cache, DNS-rebinding
 # guard, exec primitives, retry-guidance shaping). grpc/graphql link
 # the same crate so the SSRF guard lives in one place.
-mcpg-plugin-backend-net-core = { git = "https://github.com/mcpg-dev/mcpg-plugin-backend-net-core", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
-mcpg-expr            = { git = "https://github.com/mcpg-dev/mcpg-expr", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-plugin-backend-net-core = { git = "https://github.com/mcpg-dev/mcpg-plugin-backend-net-core", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14" }
+mcpg-expr            = { git = "https://github.com/mcpg-dev/mcpg-expr", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14" }
 # Unified HostHandle surface (span / metric / audit /
 # resolve_secret / config_snapshot). The plugin stores a
 # `HostHandle` on `Self` and routes per-call observability through
 # it ALONGSIDE the existing internal `tracing::*` / `metrics::*`
 # calls; the coexistence is intentional.
-mcpg-plugin-sdk      = { git = "https://github.com/mcpg-dev/mcpg-plugin-sdk", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13", features = ["static-firstparty"] }
-mcpg-plugin-host     = { git = "https://github.com/mcpg-dev/mcpg-plugin-host", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-plugin-sdk      = { git = "https://github.com/mcpg-dev/mcpg-plugin-sdk", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14", features = ["static-firstparty"] }
+mcpg-plugin-host     = { git = "https://github.com/mcpg-dev/mcpg-plugin-host", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14" }
 anyhow         = "1"
 async-trait    = "0.1"
 blake3         = "1"
