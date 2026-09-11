@@ -277,11 +277,11 @@ collisions in the workspace build); opt in to the cdylib:
 cargo build -p mcpg-plugin-backend-http --features cdylib-export --release   # → target/release/libmcpg_plugin_backend_http.so
 ```
 
-Releases publish a platform-agnostic OCI artifact, so a `plugins:` entry
-can set `source.oci` to
-`ghcr.io/mcpg-dev/source-code/plugins/backend-http:protocol-1` instead of
-`source.path` and let the gateway resolve the right os/arch/libc build
-for its host.
+Releases publish one OCI artifact per platform, under floating
+`protocol-<major>-<os>-<arch>` tags. A `plugins:` entry can therefore set
+`source.oci` to the untagged reference
+`ghcr.io/mcpg-dev/plugins/backend-http` instead of `source.path`, and the
+gateway appends the tag for the right os/arch/libc build on its host.
 
 ## Testing
 ```bash
