@@ -243,5 +243,11 @@ mcpg_plugin_sdk::declare_plugin! {
             factory: |cfg, host: ::mcpg_plugin_sdk::HostHandle|
                 HttpBackendCdylib::from_host_config(cfg, host),
         },
+        watch_strategy as watch {
+            inner_name: "watch",
+            plugin_type: crate::watch::HttpWatchCdylib,
+            factory: |cfg, host: ::mcpg_plugin_sdk::HostHandle|
+                crate::watch::HttpWatchCdylib::from_host_config(cfg, host),
+        },
     ],
 }

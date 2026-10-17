@@ -153,6 +153,90 @@ mcp:
             interval_ms: 30000
 ```
 
+### Polled changes as MCP Events (`http_poll`)
+
+A second entity, a `watch_strategy` of kind `http_poll`, turns an endpoint
+into an MCP Events source. Every request goes through the same guarded
+client as the tools: the host must resolve to a public address unless
+`allow_private_backends`, the address is pinned, and redirects are not
+followed. The URL and headers resolve before the watch starts
+(`${env.X}`, `${secret.X}`, `vault://…`; `cred://` is rejected) and are
+never logged; events name the endpoint without its query or credentials.
+
+**`mode: snapshot`** (default) reads the whole collection each poll and
+reports each item created, modified or removed as the shared
+`object.changed` event. `ETag` and `Last-Modified` are sent back, so an
+unchanged endpoint answers 304 without a body. A restart resumes exactly
+while the collection fits `snapshot_bytes`.
+
+- `format: feed` reads an RSS, Atom or JSON Feed (`store: feed`). An item's
+  event carries `title`, `link`, `published`, `updated`, `summary`,
+  `content`, `authors`, `categories` and `feedTitle`; an edit is
+  `modified`. An item that scrolls out of the feed is forgotten, not
+  deleted (`removals: ignore`, the feed default).
+- `format: json` reads a JSON array at `items_pointer`, each item keyed by
+  the value at `id_pointer` (`store: http`). Any change of an item is
+  `modified`, an item that leaves is `deleted` (`removals: report`, the
+  JSON default); the event carries the `item` (left out past 64 KiB, with
+  its size).
+
+```yaml
+mcp:
+  capabilities:
+    events:
+      - name: status.incident
+        description: An incident on the provider's status feed.
+        source:
+          watch:
+            strategy:
+              type: plugin
+              kind: http_poll
+              url: https://status.example.com/history.atom
+              format: feed
+              interval_ms: 120000
+            event_type: object.changed
+```
+
+**`mode: cursor`** follows an API's change cursor, for an append-only log
+(an events API, an audit log): each item on a page is one `http.item`
+event `{url, id, item}`, its id the event id. The cursor goes in the
+`cursor_param` query parameter; the next one comes from
+`next_cursor_pointer`, or is the last item's id. `has_more_pointer` reads
+the next page at once. The cursor advances only once the gateway has
+acknowledged the page's last item: a page it did not take in
+`ack_timeout_ms` is read again, and its ids deduplicate. A restart resumes
+at the stored cursor.
+
+```yaml
+            strategy:
+              type: plugin
+              kind: http_poll
+              url: https://api.example.com/v1/events?limit=100
+              headers: { Authorization: "Bearer ${env.API_TOKEN}" }
+              mode: cursor
+              items_pointer: /data
+              id_pointer: /id
+              cursor_param: starting_after
+              has_more_pointer: /has_more
+            event_type: http.item
+```
+
+| Field | Default | Notes |
+|---|---|---|
+| `url`, `headers` | — | The endpoint and its request headers. |
+| `format` | `json` | `json` or `feed` (snapshot only). |
+| `mode` | `snapshot` | `snapshot` or `cursor` (JSON only). |
+| `items_pointer` | `""` | JSON pointer to the items; `""` = the body. |
+| `id_pointer` | — | JSON pointer, in an item, to its id. Required for JSON. |
+| `updated_pointer` | — | JSON pointer to when an item last changed (RFC 3339 or Unix seconds): its `modifiedAt`. |
+| `removals` | `report` / `ignore` | What a snapshot does with an item that leaves. |
+| `cursor_param`, `next_cursor_pointer`, `has_more_pointer`, `initial_cursor` | — | Cursor mode. |
+| `interval_ms` | `60000` | At least 1000. |
+| `timeout_ms` | `10000` | Budget of one request. |
+| `max_response_bytes` | `1048576` | A larger response fails the poll rather than being read in part (at most 16 MiB). |
+| `allow_private_backends` | `false` | Reach a private or loopback address. |
+| `max_items`, `start_at`, `snapshot_bytes`, `max_in_flight`, `ack_timeout_ms` | `10000`, `now`, `131072`, `256`, `60000` | As for every inventory source. |
+
 ## Connection pooling
 One `reqwest::Client` is cached per resolved-credential bundle, keyed by
 a BLAKE3 digest over the post-substitution URL and header values. Two

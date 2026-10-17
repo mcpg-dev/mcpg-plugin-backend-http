@@ -10,7 +10,55 @@ description: |
   url + header values resolve through the gateway's credential
   cache at dispatch time, with an internal ClientRegistry caching
   one `reqwest::Client` per resolved-credential digest.
+
+  A `watch_strategy` (kind `http_poll`) polls an endpoint as an MCP Events
+  source: an RSS, Atom or JSON Feed, or a JSON collection, each item
+  created, modified or removed as the shared `object.changed` event, with
+  ETag / Last-Modified for 304s; or an API's change cursor, each item an
+  `http.item` event, the cursor advanced only once the gateway has the page.
 class: backend
 runtime: native-cdylib-v1
 protocol_version: "1.0"
 required_capabilities: [network_outbound]
+# MCP Events: a snapshot resumes from its stored collection, a cursor at
+# its stored cursor.
+watch_strategies:
+  - kind: http_poll
+    placement: single_owner
+    resume: true
+    event_types:
+      - name: object.changed
+        description: In snapshot mode, an item of the polled feed or collection was created, modified or removed.
+        payload_schema:
+          type: object
+          required: [op, store, location, key]
+          properties:
+            op: { enum: [created, modified, deleted] }
+            store: { enum: [feed, http] }
+            location: { type: string, description: The endpoint, without its query or credentials. }
+            key: { type: string, description: The item's id. }
+            modifiedAt: { type: string }
+            version: { type: string, description: A digest of what the item says. }
+            item: { description: "JSON: the item, when at most 64 KiB." }
+            itemTruncated: { type: boolean }
+            itemSize: { type: integer }
+            title: { type: string, description: "Feed: the entry title." }
+            link: { type: string }
+            published: { type: string }
+            updated: { type: string }
+            summary: { type: string, description: "Feed: up to 8 KiB." }
+            content: { type: string, description: "Feed: up to 8 KiB." }
+            authors: { type: array, items: { type: string } }
+            categories: { type: array, items: { type: string } }
+            feedTitle: { type: string }
+      - name: http.item
+        description: In cursor mode, one item the API returned after the cursor. The eventId is the item's id.
+        payload_schema:
+          type: object
+          required: [url, id]
+          properties:
+            url: { type: string, description: The endpoint, without its query or credentials. }
+            id: { type: string }
+            item: { description: The item, when at most 64 KiB. }
+            itemTruncated: { type: boolean }
+            itemSize: { type: integer }

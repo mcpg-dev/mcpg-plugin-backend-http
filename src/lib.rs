@@ -47,6 +47,9 @@ pub mod cdylib;
 mod completion;
 mod envelope;
 mod types;
+/// The `http_poll` watch strategy: a feed or a JSON collection polled for
+/// changes, or an API's change cursor followed, each change an MCP Event.
+pub mod watch;
 
 pub use client_registry::{
     CredDigest, IdleSweeper, collect_cred_refs, digest_credential_bundle, static_digest,
