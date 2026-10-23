@@ -43,11 +43,11 @@ pub fn build_envelope(
     downstream_error: Option<&DownstreamHttpError>,
     downstream_errors: &[DownstreamHttpError],
     error: Option<&str>,
-    // `display_url` / `display_headers`: per-call effective values
-    // surfaced to operators in the structured envelope. The plugin
-    // evaluates operator CEL templates per call, so these
-    // carry the post-substitution url + headers. `None` falls back
-    // to the registered profile values (offline tests).
+    // `display_url` / `display_headers`: the per-call effective values,
+    // post-substitution. The envelope is the caller's tool result, so it
+    // shows the URL without userinfo or query values and the header names
+    // without their values. `None` falls back to the registered profile
+    // values (offline tests).
     display_url: Option<&str>,
     display_headers: Option<&std::collections::BTreeMap<String, String>>,
 ) -> Value {
@@ -84,8 +84,12 @@ pub fn build_envelope(
         serde_json::to_value(downstream_errors).expect("serializable"),
     );
 
-    let effective_url = display_url.unwrap_or(profile.url.as_str());
-    let effective_headers = display_headers.unwrap_or(&profile.headers);
+    let effective_url = mcpg_plugin_protocol::redact::redact_url_for_display(
+        display_url.unwrap_or(profile.url.as_str()),
+    );
+    let effective_headers = mcpg_plugin_protocol::redact::redact_header_values(
+        display_headers.unwrap_or(&profile.headers),
+    );
     let family = serde_json::json!({
         "url": effective_url,
         "timeoutMs": profile.timeout.as_millis() as u64,

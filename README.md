@@ -118,9 +118,11 @@ operator-facing guard error. Redirects are disabled.
 `requestKind` (`json_body` or `query_string`), a `request` object
 (`arguments`, `body`, `query`), and a `response` object (`statusCode`,
 `contentType`, `durationMs`, `body`, `bodyTruncated`, the parsed `json`,
-and `jsonParseError`). The effective post-substitution `url` and
-`requestHeaders` are denormalised alongside the binding's limits so an
-operator can see what actually went on the wire.
+and `jsonParseError`). The effective `url` and `requestHeaders` sit
+alongside the binding's limits. The envelope is the caller's tool result,
+and a header or URL may hold a resolved secret or credential, so the `url`
+has no userinfo and every query value reads `[redacted]`, and
+`requestHeaders` lists the header names with every value `[redacted]`.
 
 The `downstreamError` slot holds the first classified failure, with the
 full list under `downstreamErrors`. Each error carries a stable `code`,
