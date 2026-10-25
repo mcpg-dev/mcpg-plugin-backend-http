@@ -82,7 +82,7 @@ mcp:
 | `require_json_response` | bool | `false` | Treat a non-JSON body as a downstream error. |
 | `max_response_bytes` | usize | `4096` | Response body cap; oversized bodies are truncated. Must be greater than 0. |
 | `timeout_ms` | u64 | `2000` | Per-call wall-clock timeout. Must be greater than 0. |
-| `allow_private_backends` | bool | `false` | Permit connections to private/loopback/link-local addresses. Container-network deployments only. |
+| `allow_private_backends` | bool | `gateway.server.allow_private_backends` | Permit connections to private/loopback/link-local addresses. The gateway sets it for every binding from `gateway.server.allow_private_backends`; a value in the binding is replaced. |
 
 A GET binding renders arguments into the query string with sorted keys,
 percent-encoded values, and array values repeating their key, so the
@@ -281,6 +281,14 @@ backend:
 ```
 
 ### As a resource
+The upstream's body is the resource. A body that is MCP `contents` (a
+`contents` array of entries with `uri` and `text` or `blob`) is served as it
+is; any other body is one text content of the requested URI, typed by the
+binding's `mime_type` (else the response's `Content-Type`). A body longer than
+`max_response_bytes`, or one that is not UTF-8, fails the read. A read passes
+`uri` (and a template's variables) as its arguments, so a GET adds them to the
+query string.
+
 ```yaml
 mcp:
   capabilities:
