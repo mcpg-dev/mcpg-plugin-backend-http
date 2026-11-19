@@ -133,9 +133,11 @@ and marked safe to retry automatically, while a POST is classed as
 potentially non-idempotent and requires operator idempotency review.
 
 ## Change-watching
-A resource binding can attach a `watch:` block so `resources/subscribe`
-works against it. The polling strategy re-reads through this binding and
-compares a hash of the result:
+A resource binding can attach a `watch:` block so a client can follow it:
+a `subscriptions/listen` request that names the URI in
+`resourceSubscriptions` gets `notifications/resources/updated` on its
+stream. The polling strategy re-reads through this binding and compares a
+hash of the result:
 
 ```yaml
 mcp:
